@@ -1,0 +1,267 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+   Design tokens.
+   Every colour is a CSS variable so the light/dark swap happens in one place.
+   Dark is *selected*, not an automatic inversion: each token has its own step.
+   --------------------------------------------------------------------------- */
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces */
+  --surface-1: #fcfcfb; /* page + chart surface */
+  --surface-2: #ffffff; /* cards */
+  --surface-3: #f4f4f1; /* subtle fills, table header, hover */
+  --surface-inset: #eceae5;
+
+  /* Ink */
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #86847d;
+
+  /* Lines */
+  --border: #e3e1db;
+  --border-strong: #cfccc4;
+  --ring: #2a78d6;
+
+  /* Brand */
+  --primary: #2a78d6;
+  --primary-hover: #256abf;
+  --primary-fg: #ffffff;
+  --primary-soft: #e8f1fd;
+
+  /* Status — reserved, never reused as a series colour */
+  --good: #167e55;
+  --good-soft: #e3f4ec;
+  --warning: #9a6700;
+  --warning-soft: #fdf3dc;
+  --serious: #b4530f;
+  --serious-soft: #fdeee2;
+  --critical: #c22f2e;
+  --critical-soft: #fdeaea;
+  --neutral-soft: #eceae5;
+
+  /* Categorical series — validated order, assigned by slot, never cycled */
+  --series-1: #2a78d6; /* blue */
+  --series-2: #eb6834; /* orange */
+  --series-3: #1baf7a; /* aqua */
+  --series-4: #eda100; /* yellow */
+  --series-5: #e87ba4; /* magenta */
+  --series-6: #008300; /* green */
+
+  /* Sequential (single hue, light -> dark) */
+  --seq-100: #cde2fb;
+  --seq-250: #86b6ef;
+  --seq-400: #3987e5;
+  --seq-550: #1c5cab;
+  --seq-700: #0d366b;
+
+  /* Chart chrome */
+  --grid: #e8e6e0;
+  --axis: #86847d;
+  --de-emphasis: #c7c5be;
+}
+
+/* Dark values are declared twice on purpose:
+   the media block follows the OS, the [data-theme] block follows the toggle.
+   The :not() guard lets an explicit light choice beat OS dark. */
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme='light'])) {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --surface-2: #212120;
+    --surface-3: #2a2a28;
+    --surface-inset: #323230;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #8f8e85;
+    --border: #35352f;
+    --border-strong: #4a4a43;
+    --ring: #3987e5;
+    --primary: #3987e5;
+    --primary-hover: #5598e7;
+    --primary-fg: #ffffff;
+    --primary-soft: #16283f;
+    --good: #35b37e;
+    --good-soft: #14291f;
+    --warning: #d19b17;
+    --warning-soft: #2b2312;
+    --serious: #e07c3e;
+    --serious-soft: #2e1e12;
+    --critical: #e66767;
+    --critical-soft: #301818;
+    --neutral-soft: #2a2a28;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
+    --series-6: #008300;
+    --seq-100: #184f95;
+    --seq-250: #256abf;
+    --seq-400: #3987e5;
+    --seq-550: #6da7ec;
+    --seq-700: #9ec5f4;
+    --grid: #2f2f2c;
+    --axis: #8f8e85;
+    --de-emphasis: #4a4a43;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --surface-1: #1a1a19;
+  --surface-2: #212120;
+  --surface-3: #2a2a28;
+  --surface-inset: #323230;
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted: #8f8e85;
+  --border: #35352f;
+  --border-strong: #4a4a43;
+  --ring: #3987e5;
+  --primary: #3987e5;
+  --primary-hover: #5598e7;
+  --primary-fg: #ffffff;
+  --primary-soft: #16283f;
+  --good: #35b37e;
+  --good-soft: #14291f;
+  --warning: #d19b17;
+  --warning-soft: #2b2312;
+  --serious: #e07c3e;
+  --serious-soft: #2e1e12;
+  --critical: #e66767;
+  --critical-soft: #301818;
+  --neutral-soft: #2a2a28;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #008300;
+  --seq-100: #184f95;
+  --seq-250: #256abf;
+  --seq-400: #3987e5;
+  --seq-550: #6da7ec;
+  --seq-700: #9ec5f4;
+  --grid: #2f2f2c;
+  --axis: #8f8e85;
+  --de-emphasis: #4a4a43;
+}
+
+/* Expose the tokens to Tailwind utilities (bg-surface-2, text-muted, ...) */
+@theme inline {
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-surface-inset: var(--surface-inset);
+  --color-ink: var(--text-primary);
+  --color-ink-secondary: var(--text-secondary);
+  --color-ink-muted: var(--text-muted);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-fg: var(--primary-fg);
+  --color-primary-soft: var(--primary-soft);
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-serious: var(--serious);
+  --color-serious-soft: var(--serious-soft);
+  --color-critical: var(--critical);
+  --color-critical-soft: var(--critical-soft);
+  --color-neutral-soft: var(--neutral-soft);
+  --color-series-1: var(--series-1);
+  --color-series-2: var(--series-2);
+  --color-series-3: var(--series-3);
+  --color-series-4: var(--series-4);
+  --color-series-5: var(--series-5);
+  --color-series-6: var(--series-6);
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+}
+
+* {
+  border-color: var(--border);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'cv02', 'cv03', 'cv04';
+}
+
+/* Tabular figures everywhere a number is compared down a column. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* Scrollbars that do not shout */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 6px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+  background-clip: content-box;
+  border: 3px solid transparent;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Focus ring — visible, consistent, keyboard-first */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Recharts: strip the default focus outline on the svg wrapper */
+.recharts-wrapper:focus,
+.recharts-surface:focus {
+  outline: none;
+}
+
+@keyframes bf-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-in-soft {
+  animation: bf-fade-in 160ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
