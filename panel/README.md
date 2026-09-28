@@ -195,6 +195,45 @@ Money is held as **paisa integers** throughout, matching the server. Format at t
 
 ---
 
+## Deploying (Vercel)
+
+`vercel.json` is committed. Because this lives in a monorepo, the one thing that is **not** in the
+file is the root directory — set that in the Vercel project settings:
+
+| Setting | Value |
+|---|---|
+| Root Directory | `revamp/panel` |
+| Framework Preset | Vite (auto-detected) |
+| Build / Install / Output | Already in `vercel.json` — leave the dashboard fields empty |
+| Node.js Version | 20.x or later |
+
+Then add the environment variables from `.env.example` (Production, Preview and Development).
+**Both are read at build time by Vite**, so changing one in Vercel needs a redeploy — restarting is
+not enough. Leave `VITE_USE_MOCKS=true` until `src/api/*` actually calls the server.
+
+### What the config does
+
+**SPA rewrite.** Everything that is not `/assets/*` or `/favicon.svg` serves `index.html`, so
+`/crm/deals` and `/treasury/allocation` resolve on a hard refresh instead of 404ing.
+
+The exclusion list matters more than it looks. Every page here is lazy-loaded, so after a deploy an
+open tab will still ask for its old chunk hashes. With a blanket `/(.*)` rewrite those requests come
+back as `index.html` with a 200 and an HTML content type, and the browser reports a cryptic syntax
+error. Excluding `/assets/` lets a stale chunk 404 honestly, which is a failure you can detect and
+recover from.
+
+**Caching.** Vite fingerprints every file in `/assets/`, so those are `immutable` for a year.
+`index.html` is `must-revalidate`, which is what makes a deploy actually roll out.
+
+**Headers.** `noindex` because this panel is internal-only and should never surface in search,
+plus `nosniff`, `DENY` framing and a locked-down `Permissions-Policy`.
+
+> Note: the config sets no CORS headers — in production the API lives on its own origin and must send
+> its own. Worth remembering that the server currently runs `cors({ origin: '*' })`, which should be
+> narrowed to the real panel origin before this goes anywhere public.
+
+---
+
 ## Conventions worth keeping
 
 **Charts.** Series colours are assigned by slot in a fixed, validated order and never cycled — a
