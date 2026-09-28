@@ -197,15 +197,29 @@ Money is held as **paisa integers** throughout, matching the server. Format at t
 
 ## Deploying (Vercel)
 
-`vercel.json` is committed. Because this lives in a monorepo, the one thing that is **not** in the
-file is the root directory — set that in the Vercel project settings:
+`vercel.json` is committed. The one thing that is **not** in the file is the root directory — set it
+in the Vercel project settings, and get it right, because Vercel reads `vercel.json` *from the root
+directory*. Point it at the wrong place and the file is silently ignored: the build still succeeds,
+but no rewrites are applied and every deep link 404s.
+
+This app is at `panel/` inside the `revamp` repository, so:
 
 | Setting | Value |
 |---|---|
-| Root Directory | `revamp/panel` |
+| Root Directory | `panel` |
 | Framework Preset | Vite (auto-detected) |
 | Build / Install / Output | Already in `vercel.json` — leave the dashboard fields empty |
 | Node.js Version | 20.x or later |
+
+Changing the root directory does not re-run the last build — trigger a redeploy afterwards, with
+"Use existing Build Cache" **off**.
+
+To confirm the config is live, check that a deep link returns HTML rather than a 404:
+
+```bash
+curl -sI https://<your-deployment>.vercel.app/crm/deals | head -1   # expect: HTTP/2 200
+curl -sI https://<your-deployment>.vercel.app/assets/does-not-exist.js | head -1   # expect: 404
+```
 
 Then add the environment variables from `.env.example` (Production, Preview and Development).
 **Both are read at build time by Vite**, so changing one in Vercel needs a redeploy — restarting is
@@ -213,17 +227,14 @@ not enough. Leave `VITE_USE_MOCKS=true` until `src/api/*` actually calls the ser
 
 ### What the config does
 
-**SPA rewrite.** Everything that is not `/assets/*` or `/favicon.svg` serves `index.html`, so
-`/crm/deals` and `/treasury/allocation` resolve on a hard refresh instead of 404ing.
+**SPA rewrite.** Everything serves `index.html`, so `/crm/deals` and `/treasury/allocation` resolve
+on a hard refresh instead of 404ing. Real files still win: Vercel checks the filesystem *before*
+rewrites, so `/assets/index-abc123.js` is served as itself.
 
-The exclusion list matters more than it looks. Every page here is lazy-loaded, so after a deploy an
-open tab will still ask for its old chunk hashes. With a blanket `/(.*)` rewrite those requests come
-back as `index.html` with a 200 and an HTML content type, and the browser reports a cryptic syntax
-error. Excluding `/assets/` lets a stale chunk 404 honestly, which is a failure you can detect and
-recover from.
-
-**Caching.** Vite fingerprints every file in `/assets/`, so those are `immutable` for a year.
-`index.html` is `must-revalidate`, which is what makes a deploy actually roll out.
+**Caching.** Vite fingerprints every file in `/assets/`, so those are `immutable` for a year. HTML is
+left on Vercel's default (`max-age=0, must-revalidate`) rather than given an explicit rule — header
+rules match the *incoming* path, not the rewritten one, so a rule on `/index.html` would never fire
+for a request to `/crm/deals`.
 
 **Headers.** `noindex` because this panel is internal-only and should never surface in search,
 plus `nosniff`, `DENY` framing and a locked-down `Permissions-Policy`.
