@@ -1,10 +1,11 @@
-import { Suspense, lazy } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Suspense } from 'react';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { AppShell } from '@/components/layout/AppShell';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { Skeleton } from '@/components/ui/skeleton';
+import { lazyWithReload } from '@/lib/lazyWithReload';
 import { AuthProvider } from '@/rbac/auth';
 import { DefaultRedirect, RequirePermission } from '@/rbac/can';
 
@@ -14,39 +15,39 @@ import { DefaultRedirect, RequirePermission } from '@/rbac/can';
  * but ships a 769 KB gzipped entry chunk behind them; the vendor split in
  * `vite.config.ts` is what keeps this one small.)
  */
-const FundAllocation = lazy(() => import('@/pages/treasury/FundAllocation'));
-const CashPosition = lazy(() => import('@/pages/treasury/CashPosition'));
-const Reconciliation = lazy(() => import('@/pages/reconciliation/Reconciliation'));
-const FinanceDashboard = lazy(() => import('@/pages/dashboard/Finance'));
-const SalesDashboard = lazy(() => import('@/pages/dashboard/Sales'));
-const SourcingDashboard = lazy(() => import('@/pages/dashboard/Sourcing'));
-const MarketingDashboard = lazy(() => import('@/pages/dashboard/Marketing'));
-const Exceptions = lazy(() => import('@/pages/operations/Exceptions'));
-const Dispatches = lazy(() => import('@/pages/operations/Dispatches'));
-const Orders = lazy(() => import('@/pages/operations/Orders'));
-const Schedules = lazy(() => import('@/pages/operations/Schedules'));
-const Receivables = lazy(() => import('@/pages/money/Receivables'));
-const Payments = lazy(() => import('@/pages/money/Payments'));
-const Businesses = lazy(() => import('@/pages/accounts/Businesses'));
-const BusinessDetail = lazy(() => import('@/pages/accounts/BusinessDetail'));
-const Team = lazy(() => import('@/pages/manage/Team'));
-const Jobs = lazy(() => import('@/pages/manage/Jobs'));
+const FundAllocation = lazyWithReload(() => import('@/pages/treasury/FundAllocation'));
+const CashPosition = lazyWithReload(() => import('@/pages/treasury/CashPosition'));
+const Reconciliation = lazyWithReload(() => import('@/pages/reconciliation/Reconciliation'));
+const FinanceDashboard = lazyWithReload(() => import('@/pages/dashboard/Finance'));
+const SalesDashboard = lazyWithReload(() => import('@/pages/dashboard/Sales'));
+const SourcingDashboard = lazyWithReload(() => import('@/pages/dashboard/Sourcing'));
+const MarketingDashboard = lazyWithReload(() => import('@/pages/dashboard/Marketing'));
+const Exceptions = lazyWithReload(() => import('@/pages/operations/Exceptions'));
+const Dispatches = lazyWithReload(() => import('@/pages/operations/Dispatches'));
+const Orders = lazyWithReload(() => import('@/pages/operations/Orders'));
+const Schedules = lazyWithReload(() => import('@/pages/operations/Schedules'));
+const Receivables = lazyWithReload(() => import('@/pages/money/Receivables'));
+const Payments = lazyWithReload(() => import('@/pages/money/Payments'));
+const Businesses = lazyWithReload(() => import('@/pages/accounts/Businesses'));
+const BusinessDetail = lazyWithReload(() => import('@/pages/accounts/BusinessDetail'));
+const Team = lazyWithReload(() => import('@/pages/manage/Team'));
+const Jobs = lazyWithReload(() => import('@/pages/manage/Jobs'));
 
 /* ------------------------------------------------------------------- CRM */
-const CrmOverview = lazy(() => import('@/pages/crm/Overview'));
-const Leads = lazy(() => import('@/pages/crm/Leads'));
-const Deals = lazy(() => import('@/pages/crm/Deals'));
-const Quotes = lazy(() => import('@/pages/crm/Quotes'));
-const Activities = lazy(() => import('@/pages/crm/Activities'));
-const Contacts = lazy(() => import('@/pages/crm/Contacts'));
-const Companies = lazy(() => import('@/pages/crm/Companies'));
-const Campaigns = lazy(() => import('@/pages/crm/Campaigns'));
-const Tickets = lazy(() => import('@/pages/support/Tickets'));
-const Automation = lazy(() => import('@/pages/manage/Automation'));
-const Catalogue = lazy(() => import('@/pages/manage/Catalogue'));
-const ImportWizard = lazy(() => import('@/pages/manage/ImportWizard'));
-const AuditLog = lazy(() => import('@/pages/manage/AuditLog'));
-const NotFound = lazy(() => import('@/pages/NotFound'));
+const CrmOverview = lazyWithReload(() => import('@/pages/crm/Overview'));
+const Leads = lazyWithReload(() => import('@/pages/crm/Leads'));
+const Deals = lazyWithReload(() => import('@/pages/crm/Deals'));
+const Quotes = lazyWithReload(() => import('@/pages/crm/Quotes'));
+const Activities = lazyWithReload(() => import('@/pages/crm/Activities'));
+const Contacts = lazyWithReload(() => import('@/pages/crm/Contacts'));
+const Companies = lazyWithReload(() => import('@/pages/crm/Companies'));
+const Campaigns = lazyWithReload(() => import('@/pages/crm/Campaigns'));
+const Tickets = lazyWithReload(() => import('@/pages/support/Tickets'));
+const Automation = lazyWithReload(() => import('@/pages/manage/Automation'));
+const Catalogue = lazyWithReload(() => import('@/pages/manage/Catalogue'));
+const ImportWizard = lazyWithReload(() => import('@/pages/manage/ImportWizard'));
+const AuditLog = lazyWithReload(() => import('@/pages/manage/AuditLog'));
+const NotFound = lazyWithReload(() => import('@/pages/NotFound'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -77,9 +78,13 @@ function PageFallback() {
 
 /** Wraps a lazy page in its permission gate. */
 function Guarded({ module, action, children }: { module: string; action?: string; children: React.ReactNode }) {
+  const { pathname } = useLocation();
   return (
     <RequirePermission module={module} action={action}>
-      <ErrorBoundary>
+      {/* Keyed on the path so the boundary remounts on navigation. React reuses
+          this component instance across routes, so without the key a single
+          caught error would pin every subsequent page to the error screen. */}
+      <ErrorBoundary key={pathname}>
         <Suspense fallback={<PageFallback />}>{children}</Suspense>
       </ErrorBoundary>
     </RequirePermission>

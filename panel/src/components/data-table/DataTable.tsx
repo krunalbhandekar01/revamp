@@ -115,10 +115,18 @@ export function DataTable<T>({
   );
 
   // Report selection upward as an effect, never during render.
+  //
+  // Keyed on `rowSelection` — the actual selection state — and deliberately NOT
+  // on `selectedRows`. A caller that passes a freshly-derived array as `data`
+  // (`rows.filter(...)` inline, which is the normal thing to write) gives it a
+  // new identity on every render; keying off the derived array then fires this
+  // effect every render, and if the parent stores the result in state that is
+  // an infinite loop that pins the main thread and blocks navigation.
   useEffect(() => {
-    onSelectionChange?.(selectedRows);
+    if (!onSelectionChange) return;
+    onSelectionChange(table.getSelectedRowModel().rows.map((r) => r.original));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRows]);
+  }, [rowSelection]);
 
   const rows = table.getRowModel().rows;
   const totalRows = table.getFilteredRowModel().rows.length;

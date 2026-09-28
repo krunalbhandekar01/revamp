@@ -226,8 +226,14 @@ export default function FundAllocationPage() {
     [],
   );
 
-  const queued = queue.filter((r) => r.state === 'queued');
-  const recommendedToPay = queued.filter((r) => r.recommendation === 'pay' && !r.blocked);
+  // Memoised so the table receives a stable `data` reference. Re-deriving these
+  // inline hands the table a new array on every render, which makes it redo all
+  // of its row work for nothing.
+  const queued = useMemo(() => queue.filter((r) => r.state === 'queued'), [queue]);
+  const recommendedToPay = useMemo(
+    () => queued.filter((r) => r.recommendation === 'pay' && !r.blocked),
+    [queued],
+  );
 
   return (
     <>

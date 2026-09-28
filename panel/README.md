@@ -231,6 +231,14 @@ not enough. Leave `VITE_USE_MOCKS=true` until `src/api/*` actually calls the ser
 on a hard refresh instead of 404ing. Real files still win: Vercel checks the filesystem *before*
 rewrites, so `/assets/index-abc123.js` is served as itself.
 
+**Stale chunks after a deploy.** Every page is code-split, so a tab opened before a deploy still
+references chunk hashes that no longer exist. `lib/lazyWithReload.ts` catches the failed import and
+reloads once to pick up the current `index.html`; a one-shot `sessionStorage` flag stops a genuinely
+broken deploy becoming a reload loop, and the second failure falls through to a plain "a newer
+version was deployed" screen. The rewrite excludes `/assets/`, so a missing chunk 404s honestly
+instead of being handed back `index.html` with a `text/html` type — which fails the module MIME check
+and is far harder to read in the console.
+
 **Caching.** Vite fingerprints every file in `/assets/`, so those are `immutable` for a year. HTML is
 left on Vercel's default (`max-age=0, must-revalidate`) rather than given an explicit rule — header
 rules match the *incoming* path, not the rewritten one, so a rule on `/index.html` would never fire
@@ -255,7 +263,10 @@ gets a legend at 2+ series and a table-view toggle. See `components/charts/palet
 
 **Tables.** One `DataTable`. Faceted filters with live counts, a column picker, a density toggle, and
 per-viewer preferences saved to `localStorage` (every access guarded — a column picker must never take
-the page down in a private window).
+the page down in a private window). `onSelectionChange` fires off the selection state, never off the
+derived rows array: callers naturally write `data={rows.filter(...)}` inline, which changes identity
+every render, and keying the effect off the derived array turns that into an infinite render loop
+that pins the main thread and silently blocks navigation.
 
 **Permissions.** Hide an action rather than disabling it, unless the user would reasonably expect it —
 then explain why. Never add a `(module, action)` pair anywhere but `rbac/registry.ts`.
